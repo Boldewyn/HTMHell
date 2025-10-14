@@ -169,7 +169,10 @@ content in the still retained `<plaintext>` element.
 
 ---
 
-Setting via `HTMLElement.innerHTML = test_string`, reading again via `.innerHTML` in Chrome and Firefox:
+Poor man’s DOM sanitizing:
+
+For this test we set the test string via `HTMLElement.innerHTML = test_string`
+and read it again via `.innerHTML`. Chrome and Firefox show the same result.
 
 The result is the same as for the Sanitizer API. We’ll award it an “E” for effort.
 
