@@ -1,35 +1,285 @@
 ---
 title: "Using the Ancient Evils for Debugging"
-author: "Your Name"
-author_bio: "Your short bio"
+author: "Manuel Strehl"
+author_bio: |
+  Manuel is a Germany-based web developer. Working in a small agency named <a
+  href="https://kinetiqa.de">Kinetiqa</a> he is tasked with everything web that
+  comes our way, from DB optimizations to accessibility testings. He is in this
+  business for long enough to show young developers his scars from the 2nd
+  Browser War.
 date: 2025-12-02
 author_links:
-  - label: "Site"
-    url: "https://linktoyourblog123.com"
-    link_label: "linktoyourblog123.com"
-intro: "<p>Short introductory text</p>"
+  - label: "Manuel’s Website"
+    url: "https://manuel-strehl.de"
+    link_label: "manuel-strehl.de"
+intro: "<p>There are unspeakable horrors in the depth of the HTML standard. We will take one of them today and unmystify it for our own use.</p>"
 image: "advent25_2"
 ---
-Some text.
-Some text.
 
-Some text. Some text.
+Deep down in the dark voids of HTML specs long gone sleeps a terrifying thing.
+Imagine, if you will, a DOM node so mighty, that it can change the
+`content-type` of parts of the document. An HTML element that makes the parser tremble
+and withdraw, and that cannot be stopped even by its own end tag.
 
-## Heading
+The wise people of the W3C try to keep the knowledge of this terror away from
+the mere mortals’ eye to spare us the danger of its madness. They advise us
+not to use the magic tag name that is the incantation for this ancient malice.
 
-Some text.
-
-## Heading
-
-Some text.
-
-
-<p class="highlight"><strong>Note:</strong> Some text.</p>
+We will, of course, do exactly this today. We’ll take a deep look at the
 
 ```html
-<h1> 
-  <a href="/">
-    Hello World
-  </a>
-</h1>
+<plaintext>
 ```
+
+element and what fun things to use it for.
+
+## A Quick Warning
+
+This being said, I’d like to point out one important thing: Do not use this
+element in production. The HTML living standard is [quite clear about
+this](https://html.spec.whatwg.org/multipage/obsolete.html#plaintext):
+
+> Elements in the following list are entirely obsolete, and must not be used by
+> authors: [...] `plaintext`
+
+So, what does `<plaintext>` do that earned it its place on HTML’s
+list of deprecated elements? In a nutshell, it ends the HTML parser and
+instructs the browser to interpret _everything_ following as plain text.
+
+## What Do We Use this Power For?
+
+That is to be taken literally. Really everything, including any closing
+`</plaintext>` or `</html>` will be printed as if a rogue, unclosed `<pre>`
+would be present. This makes `<plaintext>` the only non-empty element that has
+no end tag at all.
+
+On first sight that sounds like a really stupid superpower. On second sight, it
+still does. We go into why that element came into HTML below. But today we can
+use it for one specific use case: Debugging server-side code.
+
+Of course, specific debuggers like XDebug for PHP or built-in error pages like
+in Django take the heavy lifting here. And even the good ol’
+`print "<script>console.log('here!')</script>"` is often helpful. Those tools
+should be high up in your utility belt.
+
+But imagine this: You are deep down in your code chasing some elusive bug that
+only affects some part of the HTML output, and you want to see at a quick glance
+on the rendered page, where this problem appears. The quickest way is to
+post a quick `<plaintext>`, reload the page, and presto! Just scan down to
+where the markup starts to show through.
+
+Or assume you have some formatted debugging output that you want to quickly
+access. A `var_dump()` in PHP, for example. Or an
+`error.stack` stack trace in NodeJS. Slap a `<plaintext>` before it before
+writing it to the HTML output, so that the string is immediatelly readable:
+
+```php
+<?php
+# TODO delme!
+echo '<plaintext>'; var_dump($strange_variable);
+```
+
+![A screenshot of the HTMHell website where the lower part shows the site’s
+markup instead of the rendered HTML and a PHP variable
+output.](./debug_php.png)
+
+## The History behind this Evil
+
+How come this seemingly fringe feature ended up in all mainstream browsers?
+It was indeed there from the very beginning of HTML as this [historic W3C
+document](https://www.w3.org/History/19921103-hypertext/hypertext/WWW/MarkUp/Tags.html)
+of 1992 proves:
+
+> **Plaintext**
+>
+> This tag indicates that all following text is to be taken litterally [!], up
+> to the end of the file. Plain text is designed to be represented in the same
+> way as example XMP text, with fixed width character and significant line
+> breaks. Format:
+>
+> ```
+> <PLAINTEXT>
+> ```
+>
+> This tag allows the rest of a file to be read efficiently without parsing.
+> Its presence is an optimisation. There is no closing tag.
+
+This also tells us the reason for its invention. Back at the time the high-end PC
+that Tim Berners-Lee used to write the first web browser had a quarter of the
+power of a hand-me-down 2009 smartphone. It was important to optimize wherever
+you could. Given that the early WWW was meant as a place to share scientific
+information, the use case of having a large blob of plain text as part of your
+fancy new HTML page was relatively common.
+
+The possibility to end the costly HTML parser and fall back to simply printing
+the remainder of the file as plain text was a powerful tool. It isn’t so uncommon,
+too. For example, the programming language Perl uses a [special
+marker](https://perldoc.perl.org/perldata#Special-Literals) to tell the Perl
+parser to stop processing the remainder of the file:
+
+```pl
+print 'this is Perl code';
+__END__
+cout << 'this isn’t anymore';
+```
+
+Of course, nowadays, in the face of multi-megabyte JS payloads, this
+optimization has become completely unnecessary.
+
+## How Safe Are We?
+
+But the element still _is_ available in all browsers. So we need to keep at
+least a passing knowledge of it at the back of our minds.
+
+To give you an example how this feature could be mis-used, assume a comment
+function on a blog, where the commenter was able to smuggle in the string
+`<plaintext>`. Let’s take a look at where things can go south from here on.
+
+We use the test string
+
+```
+<p><b>hello<plaintext>world!</plaintext></b></p>
+```
+
+to check how several sanitizer libraries react to it.
+
+### There Goes the Sanity!
+
+The results are in. We ran each sanitizer in its most minimal configuration
+that produced any output. This is by design: Sanitizers are security products.
+They should produce safe output by default.
+
+---
+
+The new [HTML Sanitizer
+API](https://developer.mozilla.org/en-US/docs/Web/API/Document/parseHTMLUnsafe_static)
+as implemented in Firefox:
+
+The approach of this API is to get the nesting correct again somehow according
+to the HTML5 parser spec. That is, close
+the `<p>` and `<b>` tags, then re-open the `<b>` tag as the spec suggests. The
+API does not deal with the special semantics of `<plaintext>` at all, though.
+
+The result is a mangled version of the original, which will have double-encoded
+content in the still retained `<plaintext>` element.
+
+```
+<p><b>hello</b></p><plaintext><b>world!&lt;/plaintext&gt;&lt;/b&gt;&lt;/p&gt;</b></plaintext>
+```
+
+---
+
+Setting via `HTMLElement.innerHTML = test_string`, reading again via `.innerHTML` in Chrome and Firefox:
+
+The result is the same as for the Sanitizer API. We’ll award it an “E” for effort.
+
+```
+<p><b>hello</b></p><plaintext><b>world!&lt;/plaintext&gt;&lt;/b&gt;&lt;/p&gt;</b></plaintext>
+```
+
+---
+
+[HTML Tidy](https://www.html-tidy.org/):
+
+The venerable Tidy replaces the `<plaintext>` with a `<pre>`. This is creative.
+
+```
+<p><b>hello</b></p>
+<pre><b>world!</b></pre>
+```
+
+---
+
+[xss](https://jsxss.com/):
+
+A well-known JavaScript-based sanitizer with special focus on XSS prevention
+escapes only the `<plaintext>` tags and leaves everything else in place.
+
+```
+<p><b>hello&lt;plaintext&gt;world!&lt;/plaintext&gt;</b></p>
+```
+
+---
+
+[DOMPurify](https://github.com/cure53/DOMPurify):
+
+The classic JS sanitizer chooses to remove the `<plaintext>` and all its
+“content”. Technically this is somethat semi-correct, because the actual
+content of the `<plaintext>` spans to the end of the document.
+
+```
+<p><b>hello</b></p>
+```
+
+---
+
+[HTML Purifier](http://htmlpurifier.org/): 
+
+The top dog in the PHP world takes a slightly different approach. It removes
+only the element itself. (Note the “world!” remaining intact.)
+
+```
+<p><b>helloworld!</b></p>
+```
+
+---
+
+[Symfony HtmlSanitizer](https://symfony.com/html-sanitizer):
+
+In the world of Symfony it seems to be considered a good idea to simply move tags around:
+
+```
+<p><b>hello</b></p><plaintext>world!</plaintext>
+```
+
+---
+
+[xmllint](https://gnome.pages.gitlab.gnome.org/libxml2/xmllint.html):
+
+This libxml-based tool produces a warning about an “invalid tag plaintext”, but
+keeps the markup completely unchanged:
+
+```
+<p><b>hello<plaintext>world!</plaintext></b></p>
+```
+
+---
+
+[Mozilla Bleach](https://github.com/mozilla/bleach):
+
+Python developers who reach for this library will have everything but the `<b>`
+escaped.
+
+```
+&lt;p&gt;<b>hello&lt;plaintext&gt;world!&lt;/plaintext&gt;</b>&lt;/p&gt;
+```
+
+---
+
+[OWASP Java HTML Sanitizer](https://github.com/OWASP/java-html-sanitizer/):
+
+The staple HTML sanitizer in the Java world escapes everything and does strange
+things to the end tags, but at leas the `<plaintext>` is gone.
+
+```
+<b>helloworld!&lt;/plaintext&gt;&lt;/b&gt;&lt;/p&gt;</b>
+```
+
+---
+
+With 10 methods we produced 9 different outputs. Just to re-iterate, this is not
+to shame some of these libraries. Each one has a more or less good reason to
+do what they do.
+
+However, we enter the danger zone when mixing several tools together. For example,
+look at how DOMPurify and HTML Purifier would interact in a terrible way.
+DOMPurify would remove any `<plaintext>` including its content. A later check
+for any malicious payload would be negative.
+
+HTML Purifier on the other hand just strips the `<plaintext>` element while
+its content remains on the page. If that content contained a malicious `<script>`,
+that script would suddenly be placed verbatim in the HTML code.
+
+If one library is used for input validation and another one for output quoting,
+this is a [cross-site scripting](https://en.wikipedia.org/wiki/Cross-site_scripting)
+desaster waiting to happen.
