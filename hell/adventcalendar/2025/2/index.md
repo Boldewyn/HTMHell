@@ -65,13 +65,13 @@ should be high up in your utility belt.
 But imagine this: You are deep down in your code chasing some elusive bug that
 only affects some part of the HTML output, and you want to see at a quick glance
 on the rendered page, where this problem appears. The quickest way is to
-post a quick `<plaintext>`, reload the page, and presto! Just scan down to
-where the markup starts to show through.
+put a quick `<plaintext>` close to the offending place, reload the page, and
+presto! Just scan down to where the markup starts to show through.
 
-Or assume you have some formatted debugging output that you want to quickly
-access. A `var_dump()` in PHP, for example. Or an
-`error.stack` stack trace in NodeJS. Slap a `<plaintext>` before it before
-writing it to the HTML output, so that the string is immediatelly readable:
+This is especially useful to access formatted debugging output. A `var_dump()`
+in PHP, for example. Or an `error.stack` stack trace in NodeJS. Slap a
+`<plaintext>` in front of it before writing it to the HTML output, so that the
+string is immediatelly readable:
 
 ```php
 <?php
