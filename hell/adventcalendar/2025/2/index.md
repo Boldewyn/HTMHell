@@ -319,8 +319,9 @@ with it is severely limited. It would take considerable constellations of
 errors to co-appear, to run malicious code.
 
 Well, for the sake of the argument, let’s create such a case. Assume that you
-embed a Content-Security Policy in a `<meta>` element on your site instead of
-an HTTP header:
+embed a Content-Security Policy [in a `<meta>`
+element](https://w3c.github.io/webappsec-csp/#meta-element) on your site
+instead of an HTTP header:
 
 ```
 <meta http-equiv="Content-Security-Policy" content="script-src 'self'">
