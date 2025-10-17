@@ -4,7 +4,7 @@ author: "Manuel Strehl"
 author_bio: |
   Manuel is a Germany-based web developer. Working in a small agency named <a
   href="https://kinetiqa.de">Kinetiqa</a> he is tasked with everything web that
-  comes our way, from DB optimizations to accessibility testings. He is in this
+  comes our way, from DB optimizations to accessibility testings. Manuel is in this
   business for long enough to show young developers his scars from the 2nd
   Browser War. In his little spare time he works on
   <a href="https://codepoints.net">codepoints.net</a>.
@@ -22,8 +22,8 @@ image: "advent25_2"
 
 Deep down in the dark voids of HTML specs long gone sleeps a terrifying thing.
 Imagine, if you will, a DOM node so mighty, that it can change the
-`content-type` of parts of the document. An HTML element that makes the parser tremble
-and withdraw, and that cannot be stopped even by its own end tag.
+`content-type` of parts of the document. An HTML element that makes the parser
+tremble and withdraw, and that cannot be stopped even by its own end tag.
 
 The wise people of the W3C try to keep the knowledge of this terror away from
 the mere mortals’ eye to spare us the danger of its madness. They advise us
@@ -68,7 +68,7 @@ should be high up in your utility belt.
 
 But imagine this: You are deep down in your code chasing some elusive bug that
 only affects some part of the HTML output, and you want to see at a quick glance
-on the rendered page, where this problem appears. The quickest way is to
+on the rendered page, where this problem appears. The fastest way is to
 put a quick `<plaintext>` close to the offending place, reload the page, and
 presto! Just scan down to where the markup starts to show through.
 
@@ -121,7 +121,7 @@ too. For example, the programming language Perl uses a [special
 marker](https://perldoc.perl.org/perldata#Special-Literals) to tell the Perl
 parser to stop processing the remainder of the file:
 
-```pl
+```perl
 print 'this is Perl code';
 __END__
 cout << 'this isn’t anymore';
@@ -141,7 +141,7 @@ function on a blog, where the commenter was able to smuggle in the string
 
 We use the test string
 
-```
+```html
 <p><b>hello<plaintext>world!</plaintext></b></p>
 ```
 
@@ -167,7 +167,7 @@ API does not deal with the special semantics of `<plaintext>` at all, though.
 The result is a mangled version of the original, which will have double-encoded
 content in the still retained `<plaintext>` element.
 
-```
+```html
 <p><b>hello</b></p><plaintext><b>world!&lt;/plaintext&gt;&lt;/b&gt;&lt;/p&gt;</b></plaintext>
 ```
 
@@ -178,9 +178,9 @@ Poor man’s DOM sanitizing:
 For this test we set the test string via `HTMLElement.innerHTML = test_string`
 and read it again via `.innerHTML`. Chrome and Firefox show the same result.
 
-The result is the same as for the Sanitizer API.
+The final markup is identical with the Sanitizer API.
 
-```
+```html
 <p><b>hello</b></p><plaintext><b>world!&lt;/plaintext&gt;&lt;/b&gt;&lt;/p&gt;</b></plaintext>
 ```
 
@@ -190,7 +190,7 @@ The result is the same as for the Sanitizer API.
 
 The venerable Tidy replaces the `<plaintext>` with a `<pre>`. This is creative.
 
-```
+```html
 <p><b>hello</b></p>
 <pre><b>world!</b></pre>
 ```
@@ -202,7 +202,7 @@ The venerable Tidy replaces the `<plaintext>` with a `<pre>`. This is creative.
 A well-known JavaScript-based sanitizer with special focus on XSS prevention
 escapes only the `<plaintext>` tags and leaves everything else in place.
 
-```
+```html
 <p><b>hello&lt;plaintext&gt;world!&lt;/plaintext&gt;</b></p>
 ```
 
@@ -211,9 +211,11 @@ escapes only the `<plaintext>` tags and leaves everything else in place.
 [DOMPurify](https://github.com/cure53/DOMPurify):
 
 The classic JS sanitizer chooses to remove the `<plaintext>` and all its
-“content”. DOMPurify sees to it, that the elements are properly closed.
+“content”. (I put content in quotes, because _technically_ everything after
+the start tag would’ve been the `<plaintext>`’s content.) DOMPurify sees to it,
+that the elements are properly closed.
 
-```
+```html
 <p><b>hello</b></p>
 ```
 
@@ -224,7 +226,7 @@ The classic JS sanitizer chooses to remove the `<plaintext>` and all its
 The top dog in the PHP world takes a slightly different approach. It removes
 only the element itself. (Note the “world!” remaining intact.)
 
-```
+```html
 <p><b>helloworld!</b></p>
 ```
 
@@ -236,7 +238,7 @@ In the world of Symfony it seems to be considered a good idea to simply move
 tags around. Interesting, but at least we’ve got all elements properly closed,
 including the un-closeable `plaintext`.
 
-```
+```html
 <p><b>hello</b></p><plaintext>world!</plaintext>
 ```
 
@@ -247,7 +249,7 @@ including the un-closeable `plaintext`.
 This libxml-based tool produces a warning about an “invalid tag plaintext”, but
 keeps the markup completely unchanged:
 
-```
+```html
 <p><b>hello<plaintext>world!</plaintext></b></p>
 ```
 
@@ -258,7 +260,7 @@ keeps the markup completely unchanged:
 Python developers who reach for this library will have everything but the `<b>`
 escaped.
 
-```
+```html
 &lt;p&gt;<b>hello&lt;plaintext&gt;world!&lt;/plaintext&gt;</b>&lt;/p&gt;
 ```
 
@@ -269,7 +271,7 @@ escaped.
 The staple HTML sanitizer in the Java world escapes everything and does strange
 things to the end tags, but at least the `<plaintext>` is gone.
 
-```
+```html
 <b>helloworld!&lt;/plaintext&gt;&lt;/b&gt;&lt;/p&gt;</b>
 ```
 
@@ -283,7 +285,7 @@ However, the result is close but still different to what browsers will do. In
 this case, it’s the `<b>` tag that would not extend over the content of the
 `<plaintext>` element.
 
-```
+```html
 <p><b>hello</b></p><b>world!&lt;/plaintext&gt;&lt;/b&gt;&lt;/p&gt;</b>
 ```
 
@@ -327,14 +329,14 @@ embed a Content-Security Policy [in a `<meta>`
 element](https://w3c.github.io/webappsec-csp/#meta-element) on your site
 instead of an HTTP header:
 
-```
+```html
 <meta http-equiv="Content-Security-Policy" content="script-src 'self'">
 ```
 
 This prevents loading 3rd party scripts sufficiently. If an attacker finds a
 possibility to load HTML prior to this element, they can nullify the CSP:
 
-```
+```html
 <script src="https://example.com/malicious.js"></script>
 <plaintext>
 <meta http-equiv="Content-Security-Policy" content="script-src 'self'">
@@ -349,5 +351,7 @@ But again, for this to really have any effect, several things must come together
     definitively not a stealthy attack
 
 So we can conclude: It is important to know about `<plaintext>`. But if we
-follow tried and tested security rules, we will remain safe from this ancient
-evil.
+follow tried and tested security rules (for example the [OWASP Application
+Security Verification
+Standard](https://owasp.org/www-project-application-security-verification-standard/)),
+we will remain safe from this ancient evil.
