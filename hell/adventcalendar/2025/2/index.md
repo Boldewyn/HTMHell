@@ -50,8 +50,8 @@ instructs the browser to interpret _everything_ following as plain text.
 
 That is to be taken literally. Really everything, including any closing
 `</plaintext>` or `</html>` will be printed as if a rogue, unclosed `<pre>`
-would be present. This makes `<plaintext>` the only non-empty element that has
-no end tag at all.
+would suddenly go haywire and slurp up the rest of the page. By the way, this
+makes `<plaintext>` the only non-empty element that has no end tag at all.
 
 On first sight that sounds like a really stupid superpower. On second sight, it
 still does. We go into why that element came into HTML below. But today we can
@@ -262,7 +262,7 @@ escaped.
 [OWASP Java HTML Sanitizer](https://github.com/OWASP/java-html-sanitizer/):
 
 The staple HTML sanitizer in the Java world escapes everything and does strange
-things to the end tags, but at leas the `<plaintext>` is gone.
+things to the end tags, but at least the `<plaintext>` is gone.
 
 ```
 <b>helloworld!&lt;/plaintext&gt;&lt;/b&gt;&lt;/p&gt;</b>
@@ -270,7 +270,21 @@ things to the end tags, but at leas the `<plaintext>` is gone.
 
 ---
 
-With 10 methods we produced 9 different outputs. Just to re-iterate, this is not
+[Ammonia](https://github.com/rust-ammonia/ammonia) as configured by [nh3](https://nh3.readthedocs.io/):
+
+This Rust-based sanitizer advertises its speed and conformance with the HTML spec.
+
+However, the result is close but still different to what browsers will do. In
+this case, it’s the `<b>` tag that would not extend over the content of the
+`<plaintext>` element.
+
+```
+<p><b>hello</b></p><b>world!&lt;/plaintext&gt;&lt;/b&gt;&lt;/p&gt;</b>
+```
+
+---
+
+With 11 methods we produced 10 different outputs. Just to re-iterate, this is not
 to shame some of these libraries. Each one has a more or less good reason to
 do what they do.
 
