@@ -6,12 +6,16 @@ author_bio: |
   href="https://kinetiqa.de">Kinetiqa</a> he is tasked with everything web that
   comes our way, from DB optimizations to accessibility testings. He is in this
   business for long enough to show young developers his scars from the 2nd
-  Browser War.
+  Browser War. In his little spare time he works on
+  <a href="https://codepoints.net">codepoints.net</a>.
 date: 2025-12-02
 author_links:
   - label: "Manuel’s Website"
     url: "https://manuel-strehl.de"
     link_label: "manuel-strehl.de"
+  - label: "Manuel on Mastodon"
+    url: "https://mastodon.social/@boldewyn"
+    link_label: "@boldewyn@mastodon.social"
 intro: "<p>There are unspeakable horrors in the depth of the HTML standard. We will take one of them today and unmystify it for our own use.</p>"
 image: "advent25_2"
 ---
