@@ -174,7 +174,7 @@ Poor man’s DOM sanitizing:
 For this test we set the test string via `HTMLElement.innerHTML = test_string`
 and read it again via `.innerHTML`. Chrome and Firefox show the same result.
 
-The result is the same as for the Sanitizer API. We’ll award it an “E” for effort.
+The result is the same as for the Sanitizer API.
 
 ```
 <p><b>hello</b></p><plaintext><b>world!&lt;/plaintext&gt;&lt;/b&gt;&lt;/p&gt;</b></plaintext>
@@ -207,8 +207,7 @@ escapes only the `<plaintext>` tags and leaves everything else in place.
 [DOMPurify](https://github.com/cure53/DOMPurify):
 
 The classic JS sanitizer chooses to remove the `<plaintext>` and all its
-“content”. Technically this is somethat semi-correct, because the actual
-content of the `<plaintext>` spans to the end of the document.
+“content”. DOMPurify sees to it, that the elements are properly closed.
 
 ```
 <p><b>hello</b></p>
@@ -229,7 +228,9 @@ only the element itself. (Note the “world!” remaining intact.)
 
 [Symfony HtmlSanitizer](https://symfony.com/html-sanitizer):
 
-In the world of Symfony it seems to be considered a good idea to simply move tags around:
+In the world of Symfony it seems to be considered a good idea to simply move
+tags around. Interesting, but at least we’ve got all elements properly closed,
+including the un-closeable `plaintext`.
 
 ```
 <p><b>hello</b></p><plaintext>world!</plaintext>
@@ -284,19 +285,29 @@ this case, it’s the `<b>` tag that would not extend over the content of the
 
 ---
 
-With 11 methods we produced 10 different outputs. Just to re-iterate, this is not
-to shame some of these libraries. Each one has a more or less good reason to
-do what they do.
+With 11 methods we produced 10 different outputs.
 
-However, we enter the danger zone when mixing several tools together. For example,
-look at how DOMPurify and HTML Purifier would interact in a terrible way.
+Just to be crystal clear here: this is not to shame some of these libraries.
+Each one has a good reason to do what they do.
+
+It emphasizes the point though, that one should be absolutely sure about the
+purpose and extent that a chosen sanitizer will apply to its input. Is it for
+removing dangerous things? Is it to scrape HTML off the string or escaping
+any HTML-special characters?
+
+We enter the danger zone when mixing several tools together without taking
+a cautious look first. For example,
+look at how DOMPurify and HTML Purifier would interact in a potentially
+hazardous way.
 DOMPurify would remove any `<plaintext>` including its content. A later check
 for any malicious payload would be negative.
 
 HTML Purifier on the other hand just strips the `<plaintext>` element while
-its content remains on the page. If that content contained a malicious `<script>`,
-that script would suddenly be placed verbatim in the HTML code.
+its content remains on the page. If we’d trust the previous DOMPurify result,
+we’d be surprised by sudden new content being placed verbatim in the HTML code.
 
 If one library is used for input validation and another one for output quoting,
 this is a [cross-site scripting](https://en.wikipedia.org/wiki/Cross-site_scripting)
-desaster waiting to happen.
+desaster waiting to happen, unless we know _exactly_ what we’re doing.
+
+## Letting the Evil Sleep Again
