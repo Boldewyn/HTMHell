@@ -291,9 +291,10 @@ Just to be crystal clear here: this is not to shame some of these libraries.
 Each one has a good reason to do what they do.
 
 It emphasizes the point though, that one should be absolutely sure about the
-purpose and extent that a chosen sanitizer will apply to its input. Is it for
-removing dangerous things? Is it to scrape HTML off the string or escaping
-any HTML-special characters?
+purpose of a chosen sanitizer and extent that it will change its input. Is it for
+removing potentially dangerous things, but keep as much HTML intact as possible?
+Is it to scrape all HTML off the string, or only escaping any HTML-special
+characters? The results will differ tremendously.
 
 We enter the danger zone when mixing several tools together without taking
 a cautious look first. For example,
@@ -302,7 +303,7 @@ hazardous way.
 DOMPurify would remove any `<plaintext>` including its content. A later check
 for any malicious payload would be negative.
 
-HTML Purifier on the other hand just strips the `<plaintext>` element while
+HTML Purifier on the other hand just strips the `<plaintext>` tag, while
 its content remains on the page. If we’d trust the previous DOMPurify result,
 we’d be surprised by sudden new content being placed verbatim in the HTML code.
 
@@ -311,3 +312,37 @@ this is a [cross-site scripting](https://en.wikipedia.org/wiki/Cross-site_script
 desaster waiting to happen, unless we know _exactly_ what we’re doing.
 
 ## Letting the Evil Sleep Again
+
+In the case of `<plaintext>` itself we are most likely in a safe place,
+though. Since `<plaintext>` has built-in HTML escaping, doing something dangerous
+with it is severely limited. It would take considerable constellations of
+errors to co-appear, to run malicious code.
+
+Well, for the sake of the argument, let’s create such a case. Assume that you
+embed a Content-Security Policy in a `<meta>` element on your site instead of
+an HTTP header:
+
+```
+<meta http-equiv="Content-Security-Policy" content="script-src 'self'">
+```
+
+This prevents loading 3rd party scripts sufficiently. If an attacker finds a
+possibility to load HTML prior to this element, they can nullify the CSP:
+
+```
+<script src="https://example.com/malicious.js"></script>
+<plaintext>
+<meta http-equiv="Content-Security-Policy" content="script-src 'self'">
+```
+
+But again, for this to really have any effect, several things must come together:
+
+- the attacker must be able to place HTML in the `<head>` (because CSP meta tags
+    can only be used there)
+- the CSP is not set via HTTP
+- the complete remaining page is converted to `text/plain`, which makes this
+    definitively not a stealthy attack
+
+So we can conclude: It is important to know about `<plaintext>`. But if we
+follow tried and tested security rules, we will remain safe from this ancient
+evil.
