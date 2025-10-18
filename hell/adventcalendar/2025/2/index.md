@@ -1,13 +1,7 @@
 ---
 title: "Using the Ancient Evils for Debugging"
 author: "Manuel Strehl"
-author_bio: |
-  Manuel is a Germany-based web developer. Working in a small agency named <a
-  href="https://kinetiqa.de">Kinetiqa</a> he is tasked with everything web that
-  comes our way, from DB optimizations to accessibility testings. Manuel has
-  been in this business long enough to show young developers his scars from the 2nd
-  Browser War. In his little spare time he works on
-  <a href="https://codepoints.net">codepoints.net</a>.
+author_bio: 'Manuel is a Germany-based web developer. Working in a small agency named <a href="https://kinetiqa.de">Kinetiqa</a> he is tasked with everything web that comes our way, from DB optimizations to accessibility testings. Manuel has been in this business long enough to show young developers his scars from the 2nd Browser War. In his little spare time he works on <a href="https://codepoints.net">codepoints.net</a>.'
 date: 2025-12-02
 author_links:
   - label: "Manuel’s Website"
