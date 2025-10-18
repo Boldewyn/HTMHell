@@ -4,8 +4,8 @@ author: "Manuel Strehl"
 author_bio: |
   Manuel is a Germany-based web developer. Working in a small agency named <a
   href="https://kinetiqa.de">Kinetiqa</a> he is tasked with everything web that
-  comes our way, from DB optimizations to accessibility testings. Manuel is in this
-  business for long enough to show young developers his scars from the 2nd
+  comes our way, from DB optimizations to accessibility testings. Manuel has
+  been in this business long enough to show young developers his scars from the 2nd
   Browser War. In his little spare time he works on
   <a href="https://codepoints.net">codepoints.net</a>.
 date: 2025-12-02
@@ -25,8 +25,8 @@ Imagine, if you will, a DOM node so mighty, that it can change the
 `content-type` of parts of the document. An HTML element that makes the parser
 tremble and withdraw, and that cannot be stopped even by its own end tag.
 
-The wise people of the W3C try to keep the knowledge of this terror away from
-the mere mortals’ eye to spare us the danger of its madness. They advise us
+The wise people of W3C try to keep the knowledge of this terror away from
+the mere mortals’ eyes to spare us the danger of its madness. They advise us
 not to use the magic tag name that is the incantation for this ancient malice.
 
 We will, of course, do exactly this today. We’ll take a deep look at the
@@ -53,20 +53,20 @@ instructs the browser to interpret _everything_ following as plain text.
 ## What Do We Use this Power For?
 
 That is to be taken literally. Really everything, including any closing
-`</plaintext>` or `</html>` will be printed as if a rogue, unclosed `<pre>`
+`</plaintext>` or `</html>`, will be printed as if a rogue, unclosed `<pre>`
 would suddenly go haywire and slurp up the rest of the page. By the way, this
 makes `<plaintext>` the only non-empty element that has no end tag at all.
 
 On first sight that sounds like a really stupid superpower. On second sight, it
-still does. We go into why that element came into HTML below. But today we can
-use it for one specific use case: Debugging server-side code.
+still does. We look into how that element became part of HTML below. But now
+we will use it for one specific purpose: Debugging server-side code.
 
-Of course, specific debuggers like XDebug for PHP or built-in error pages like
-in Django take the heavy lifting here. And even the good ol’
+Of course, specialized debuggers like XDebug for PHP or built-in error pages like
+in Django take over the heavy lifting here. And even the good ol’
 `print "<script>console.log('here!')</script>"` is often helpful. Those tools
 should be high up in your utility belt.
 
-But imagine this: You are deep down in your code chasing some elusive bug that
+But imagine this: You are deep down in your code chasing an elusive bug that
 only affects some part of the HTML output, and you want to see at a quick glance
 on the rendered page, where this problem appears. The fastest way is to
 put a quick `<plaintext>` close to the offending place, reload the page, and
@@ -83,13 +83,11 @@ string is immediatelly readable:
 echo '<plaintext>'; var_dump($strange_variable);
 ```
 
-![A screenshot of the HTMHell website where the lower part shows the site’s
-markup instead of the rendered HTML and a PHP variable
-output.](./debug_php.png)
+![A screenshot of the HTMHell website where the lower part shows a PHP variable output followed by the site’s markup instead of the rendered HTML](./debug_php.png)
 
 ## The History behind this Evil
 
-How come this seemingly fringe feature ended up in all mainstream browsers?
+How ended this seemingly fringe feature up in all mainstream browsers?
 It was indeed there from the very beginning of HTML as this [historic W3C
 document](https://www.w3.org/History/19921103-hypertext/hypertext/WWW/MarkUp/Tags.html)
 of 1992 proves:
@@ -108,15 +106,18 @@ of 1992 proves:
 > This tag allows the rest of a file to be read efficiently without parsing.
 > Its presence is an optimisation. There is no closing tag.
 
-This also tells us the reason for its invention. Back at the time the high-end PC
-that Tim Berners-Lee used to write the first web browser had a quarter of the
+This also tells us the reason for its invention. Back at the time Sir Tim Berners-Lee’s high-end NeXT PC
+that he used to write the first web browser had a quarter of the
 power of a hand-me-down 2009 smartphone. It was important to optimize wherever
-you could. Given that the early WWW was meant as a place to share scientific
-information, the use case of having a large blob of plain text as part of your
-fancy new HTML page was relatively common.
+you could.
 
+Given that the early WWW was meant as a place to share scientific
+information, having a large blob of plain text as part of your
+fancy new HTML page was relatively common.
 The possibility to end the costly HTML parser and fall back to simply printing
-the remainder of the file as plain text was a powerful tool. It isn’t so uncommon,
+the remainder of the file as plain text was a powerful tool.
+
+Such a feature isn’t unheard of in the world of computers,
 too. For example, the programming language Perl uses a [special
 marker](https://perldoc.perl.org/perldata#Special-Literals) to tell the Perl
 parser to stop processing the remainder of the file:
@@ -127,6 +128,9 @@ __END__
 cout << 'this isn’t anymore';
 ```
 
+(Perl programmers use this not for performance reasons but to embed additional
+data into their programs.)
+
 Of course, nowadays, in the face of multi-megabyte JS payloads, this
 optimization has become completely unnecessary.
 
@@ -135,9 +139,9 @@ optimization has become completely unnecessary.
 But the element still _is_ available in all browsers. So we need to keep at
 least a passing knowledge of it at the back of our minds.
 
-To give you an example how this feature could be mis-used, assume a comment
+To give you an example, how this feature could be mis-used, assume a comment
 function on a blog, where the commenter was able to smuggle in the string
-`<plaintext>`. Let’s take a look at where things can go south from here on.
+`<plaintext>`. Let’s take a look at where things can go south from here.
 
 We use the test string
 
@@ -297,7 +301,7 @@ Just to be crystal clear here: this is not to shame some of these libraries.
 Each one has a good reason to do what they do.
 
 It emphasizes the point though, that one should be absolutely sure about the
-purpose of a chosen sanitizer and extent that it will change its input. Is it for
+purpose of a chosen sanitizer and extent as to which it will change its input. Is it for
 removing potentially dangerous things, but keep as much HTML intact as possible?
 Is it to scrape all HTML off the string, or only escaping any HTML-special
 characters? The results will differ tremendously.
@@ -322,11 +326,11 @@ desaster waiting to happen, unless we know _exactly_ what we’re doing.
 In the case of `<plaintext>` itself we are most likely in a safe place,
 though. Since `<plaintext>` has built-in HTML escaping, doing something dangerous
 with it is severely limited. It would take considerable constellations of
-errors to co-appear, to run malicious code.
+errors to co-appear in order to run malicious code.
 
 Well, for the sake of the argument, let’s create such a case. Assume that you
-embed a Content-Security Policy [in a `<meta>`
-element](https://w3c.github.io/webappsec-csp/#meta-element) on your site
+embed a Content-Security Policy on your site [in a `<meta>`
+element](https://w3c.github.io/webappsec-csp/#meta-element)
 instead of an HTTP header:
 
 ```html
