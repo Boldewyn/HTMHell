@@ -24,7 +24,7 @@ We will, of course, do exactly this today. We’ll take a deep look at the
 <plaintext>
 ```
 
-element and what fun things to use it for.
+element and what fun things we can use it for.
 
 ## A Quick Warning
 
@@ -88,7 +88,7 @@ Of course, nowadays, in the face of multi-megabyte JS payloads, this optimizatio
 
 But the element still _is_ available in all browsers. So we need to keep at least a passing knowledge of it at the back of our minds.
 
-To give you an example, how this feature could be mis-used, assume a comment function on a blog, where the commenter was able to smuggle in the string `<plaintext>`. Let’s take a look at where things can go south from here.
+To give you an example, how this feature could be mis-used, assume a comment function on a blog, where the commenter was able to smuggle in the string `<plaintext>`. As good developers we know never to trust users’ input, so we put the comment through a sanitizer. Let’s take a look at where things can go south from here.
 
 We use the test string
 
@@ -100,13 +100,46 @@ to check how several sanitizer libraries react to it.
 
 ### There Goes the Sanity!
 
-The results are in. We ran each sanitizer in its most minimal configuration that produced any output. This is by design: Sanitizers are security products. They should produce safe output by default.
+We run each sanitizer in its most minimal configuration that produces any output. This is by design: Sanitizers are security products. They should produce safe output by default.
 
----
+The results are in. And they are quite surprising.
 
-The new [HTML Sanitizer API](https://developer.mozilla.org/en-US/docs/Web/API/Document/parseHTMLUnsafe_static) as implemented in Firefox:
+<details>
+<summary>The new HTML Sanitizer API as implemented in Firefox</summary>
+
+[developer.mozilla.org/en-US/docs/Web/API/Document/parseHTML_static](https://developer.mozilla.org/en-US/docs/Web/API/Document/parseHTML_static)
+
+**Code:**
+
+```js
+console.log(Document.parseHTML(TEST_STRING).body.innerHTML);
+```
 
 The approach of this API is to get the nesting correct again somehow according to the HTML5 parser spec. That is, close the `<p>` and `<b>` tags, then re-open the `<b>` tag as the spec suggests. The API does not deal with the special semantics of `<plaintext>` at all, though.
+
+**Result:**
+
+We end up with a string that has the `<plaintext>` element and its content stripped away:
+
+```html
+<p><b>hello</b></p>
+```
+
+</details>
+<details>
+<summary>Poor man’s DOM sanitizing</summary>
+
+**Code:**
+
+```js
+const div = document.createElement('div');
+div.innerHTML = TEST_STRING;
+console.log(div.innerHTML);
+```
+
+For this test we set the test string via `HTMLElement.innerHTML = test_string` and read it again via `.innerHTML`. Chrome and Firefox show the same result.
+
+**Result:**
 
 The result is a mangled version of the original, which will have double-encoded content in the still retained `<plaintext>` element.
 
@@ -114,21 +147,25 @@ The result is a mangled version of the original, which will have double-encoded 
 <p><b>hello</b></p><plaintext><b>world!&lt;/plaintext&gt;&lt;/b&gt;&lt;/p&gt;</b></plaintext>
 ```
 
----
+_NB:_ We can trick the Sanitizer API into producing this output, too, if we’re careless with its configuration:
 
-Poor man’s DOM sanitizing:
-
-For this test we set the test string via `HTMLElement.innerHTML = test_string` and read it again via `.innerHTML`. Chrome and Firefox show the same result.
-
-The final markup is identical with the Sanitizer API.
-
-```html
-<p><b>hello</b></p><plaintext><b>world!&lt;/plaintext&gt;&lt;/b&gt;&lt;/p&gt;</b></plaintext>
+```js
+Document.parseHTML(TEST_STRING, { sanitizer: { removeElements: []}}).body.innerHTML
 ```
 
----
+</details>
+<details>
+<summary>HTML Tidy</summary>
 
-[HTML Tidy](https://www.html-tidy.org/):
+[www.html-tidy.org/](https://www.html-tidy.org/)
+
+**Code:**
+
+```sh
+echo -n "$TEST_STRING" | tidy
+```
+
+**Result:**
 
 The venerable Tidy replaces the `<plaintext>` with a `<pre>`. This is creative.
 
@@ -137,9 +174,20 @@ The venerable Tidy replaces the `<plaintext>` with a `<pre>`. This is creative.
 <pre><b>world!</b></pre>
 ```
 
----
+</details>
+<details>
+<summary>xss</summary>
 
-[xss](https://jsxss.com/):
+[jsxss.com/](https://jsxss.com/)
+
+**Code:**
+
+```js
+import xss from 'xss';
+console.log(xss(TEST_STRING));
+```
+
+**Result:**
 
 A well-known JavaScript-based sanitizer with special focus on XSS prevention escapes only the `<plaintext>` tags and leaves everything else in place.
 
@@ -147,19 +195,46 @@ A well-known JavaScript-based sanitizer with special focus on XSS prevention esc
 <p><b>hello&lt;plaintext&gt;world!&lt;/plaintext&gt;</b></p>
 ```
 
----
+</details>
+<details>
+<summary>DOMPurify</summary>
 
-[DOMPurify](https://github.com/cure53/DOMPurify):
+[github.com/cure53/DOMPurify](https://github.com/cure53/DOMPurify)
 
-The classic JS sanitizer chooses to remove the `<plaintext>` and all its “content”. (I put content in quotes, because _technically_ everything after the start tag would’ve been the `<plaintext>`’s content.) DOMPurify sees to it, that the elements are properly closed.
+**Code:**
+
+```js
+import { JSDOM } from 'jsdom';
+import DOMPurify from 'dompurify';
+
+const purify = DOMPurify(new JSDOM('').window);
+console.log(purify.sanitize(TEST_STRING));
+```
+
+**Result:**
+
+The classic JS sanitizer chooses to remove the `<plaintext>` and all its “content”. (I put content in quotes, because _technically_ everything after the start tag would’ve been the `<plaintext>`’s content.) DOMPurify sees to it, that the elements are properly closed. The result is identical to the one of the Sanitizer API.
 
 ```html
 <p><b>hello</b></p>
 ```
 
----
+</details>
+<details>
+<summary>HTML Purifier</summary>
 
-[HTML Purifier](http://htmlpurifier.org/): 
+[htmlpurifier.org/](http://htmlpurifier.org/)
+
+**Code:**
+
+```php
+<?php
+$config = HTMLPurifier_Config::createDefault();
+$purifier = new HTMLPurifier($config);
+printf($purifier->purify(TEST_STRING));
+```
+
+**Result:**
 
 The top dog in the PHP world takes a slightly different approach. It removes only the element itself. (Note the “world!” remaining intact.)
 
@@ -167,9 +242,25 @@ The top dog in the PHP world takes a slightly different approach. It removes onl
 <p><b>helloworld!</b></p>
 ```
 
----
+</details>
+<details>
+<summary>Symfony HtmlSanitizer</summary>
 
-[Symfony HtmlSanitizer](https://symfony.com/html-sanitizer):
+[symfony.com/html-sanitizer](https://symfony.com/html-sanitizer)
+
+**Code:**
+
+```php
+<?php
+use Symfony\Component\HtmlSanitizer\HtmlSanitizer;
+use Symfony\Component\HtmlSanitizer\HtmlSanitizerConfig;
+
+$config = (new HtmlSanitizerConfig())->allowSafeElements();
+$sanitizer = new HTMLSanitizer($config);
+printf($sanitizer->sanitize(TEST_STRING));
+```
+
+**Result:**
 
 Symfony’s sanitizer has a fascinating way of moving tags around. Interesting, but at least we’ve got all elements properly closed, including the un-closeable `plaintext`.
 
@@ -177,9 +268,19 @@ Symfony’s sanitizer has a fascinating way of moving tags around. Interesting, 
 <p><b>hello</b></p><plaintext>world!</plaintext>
 ```
 
----
+</details>
+<details>
+<summary>xmllint</summary>
 
-[xmllint](https://gnome.pages.gitlab.gnome.org/libxml2/xmllint.html):
+[gnome.pages.gitlab.gnome.org/libxml2/xmllint.html](https://gnome.pages.gitlab.gnome.org/libxml2/xmllint.html)
+
+**Code:**
+
+```sh
+echo -n "$TEST_STRING" | xmllint --html -
+```
+
+**Result:**
 
 This libxml-based tool produces a warning about an “invalid tag plaintext”, but keeps the markup completely unchanged:
 
@@ -187,9 +288,20 @@ This libxml-based tool produces a warning about an “invalid tag plaintext”, 
 <p><b>hello<plaintext>world!</plaintext></b></p>
 ```
 
----
+</details>
+<details>
+<summary>Mozilla Bleach</summary>
 
-[Mozilla Bleach](https://github.com/mozilla/bleach):
+[github.com/mozilla/bleach](https://github.com/mozilla/bleach)
+
+**Code:**
+
+```py
+import bleach
+print(bleach.clean(TEST_STRING))
+```
+
+**Result:**
 
 Python developers who reach for this library will have everything but the `<b>` escaped.
 
@@ -197,9 +309,28 @@ Python developers who reach for this library will have everything but the `<b>` 
 &lt;p&gt;<b>hello&lt;plaintext&gt;world!&lt;/plaintext&gt;</b>&lt;/p&gt;
 ```
 
----
+</details>
+<details>
+<summary>OWASP Java HTML Sanitizer</summary>
 
-[OWASP Java HTML Sanitizer](https://github.com/OWASP/java-html-sanitizer/):
+[github.com/OWASP/java-html-sanitizer/](https://github.com/OWASP/java-html-sanitizer/)
+
+**Code:**
+
+```java
+import org.owasp.html.PolicyFactory;
+import org.owasp.html.Sanitizers;
+
+public class Sanitize {
+    public static void main(String[] args) {
+        PolicyFactory policy = Sanitizers.FORMATTING.and(Sanitizers.LINKS);
+        String safe = policy.sanitize(TEST_STRING);
+        System.out.println(safe);
+    }
+}
+```
+
+**Result:**
 
 The staple HTML sanitizer in the Java world escapes everything and does strange things to the end tags, but at least the `<plaintext>` is gone.
 
@@ -207,11 +338,22 @@ The staple HTML sanitizer in the Java world escapes everything and does strange 
 <b>helloworld!&lt;/plaintext&gt;&lt;/b&gt;&lt;/p&gt;</b>
 ```
 
----
+</details>
+<details>
+<summary>Ammonia as configured by nh3</summary>
 
-[Ammonia](https://github.com/rust-ammonia/ammonia) as configured by [nh3](https://nh3.readthedocs.io/):
+[github.com/rust-ammonia/ammonia](https://github.com/rust-ammonia/ammonia), [nh3.readthedocs.io/](https://nh3.readthedocs.io/)
+
+**Code:**
+
+```py
+import nh3
+print(nh3.clean(TEST_STRING))
+```
 
 This Rust-based sanitizer advertises its speed and conformance with the HTML spec.
+
+**Result:**
 
 However, the result is close but still different to what browsers will do. In this case, it’s the `<b>` tag that would not extend over the content of the `<plaintext>` element.
 
@@ -219,13 +361,15 @@ However, the result is close but still different to what browsers will do. In th
 <p><b>hello</b></p><b>world!&lt;/plaintext&gt;&lt;/b&gt;&lt;/p&gt;</b>
 ```
 
+</details>
+
 ---
 
-With 11 methods we produced 10 different outputs.
+With **11** sanitizing methods we managed to produce **10** different outputs.
 
-Just to be crystal clear here: this is not to shame some of these libraries. Each one has a good reason to do what they do. And each one serves a slightly different purpose.
+Just to be crystal clear here: we are not criticizing the result of any of these libraries. Each one has a good reason to do what they do. And each one serves a slightly different purpose.
 
-It emphasizes the point though, that one should be absolutely sure about the aim of a chosen sanitizer and extent as to which it will change its input. Is it for removing potentially dangerous things, but keep as much HTML intact as possible? Is it to scrape all HTML off the string, or only escaping any HTML-special characters? The results will differ tremendously.
+It emphasizes the point, though, that one should be absolutely sure about the aim of a chosen sanitizer and extent as to which it will change its input. Is the library for removing only potentially dangerous things but keeping as much HTML intact as possible? Is it to scrape all HTML off the string, or only escaping any HTML-special characters? The results will differ tremendously.
 
 We enter the danger zone when mixing several tools together without taking a cautious look first. For example, look at how DOMPurify and HTML Purifier would interact in a potentially hazardous way. DOMPurify would remove any `<plaintext>` including its content. A later check for any malicious payload would be negative.
 
