@@ -282,7 +282,7 @@ echo -n "$TEST_STRING" | xmllint --html -
 
 **Result:**
 
-This libxml-based tool produces a warning about an “invalid tag plaintext”, but keeps the markup completely unchanged:
+This libxml-based tool produces a warning about an “invalid tag plaintext” but keeps the markup completely unchanged:
 
 ```html
 <p><b>hello<plaintext>world!</plaintext></b></p>
@@ -379,9 +379,9 @@ If one library is used for input validation and another one for output quoting, 
 
 ## Letting the Evil Sleep Again
 
-In the case of `<plaintext>` itself we are most likely in a safe place, though. Since `<plaintext>` has built-in HTML escaping, doing something dangerous with it is severely limited. It would take considerable constellations of errors to co-appear in order to run malicious code.
+In the case of `<plaintext>` itself we are most likely in a safe place, though. Since `<plaintext>` has built-in HTML escaping, doing something dangerous with it is severely limited. It takes quite rare a constellation of errors and oversights to appear together in order to run malicious code.
 
-Well, for the sake of the argument, let’s create such a case. Assume that you embed a Content-Security Policy on your site [in a `<meta>` element](https://w3c.github.io/webappsec-csp/#meta-element) instead of an HTTP header:
+Well, for the sake of the argument, let’s create such a constellation. Assume that you embed a Content-Security Policy on your site [in a `<meta>` element](https://w3c.github.io/webappsec-csp/#meta-element) instead of an HTTP header:
 
 ```html
 <meta http-equiv="Content-Security-Policy" content="script-src 'self'">
@@ -397,8 +397,10 @@ This prevents loading 3rd party scripts sufficiently. If an attacker finds a pos
 
 But again, for this to really have any effect, several things must come together:
 
-- the attacker must be able to place HTML in the `<head>` (because CSP meta tags can only be used there)
-- the CSP is not set via HTTP
-- the complete remaining page is converted to `text/plain`, which makes this definitively not a stealthy attack
+- The attacker must be able to place HTML in the `<head>` (because CSP meta tags can only be used there)
+- The CSP is not set via HTTP
+- The complete remainder of the page is converted to `text/plain`, which makes this definitively not a stealthy attack
 
 So we can conclude: It is important to know about `<plaintext>`. But if we follow tried and tested security rules (for example the [OWASP Application Security Verification Standard](https://owasp.org/www-project-application-security-verification-standard/)), we will remain safe from this ancient evil.
+
+_I’d like to thank [Tom Schuster](https://hachyderm.io/@evilpie), Christian Vogl, and Daniela Strehl for valuable input to this article._
