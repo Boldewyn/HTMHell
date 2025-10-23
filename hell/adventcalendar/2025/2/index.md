@@ -102,7 +102,7 @@ to check how several sanitizer libraries react to it.
 
 We run each sanitizer in its most minimal configuration that produces any output. This is by design: Sanitizers are security products. They should produce safe output by default.
 
-The results are in. And they are quite surprising.
+The results are in. And they are quite surprising. (Click on a name to read the horrifying details.)
 
 <details>
 <summary>The new HTML Sanitizer API as implemented in Firefox</summary>
